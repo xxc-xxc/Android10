@@ -2,7 +2,7 @@ package com.xxc.android10.activity;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
-import android.app.Notification;
+import android.content.ContentResolver;
 import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.Context;
@@ -14,8 +14,10 @@ import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.ParcelFileDescriptor;
 import android.provider.DocumentsContract;
 import android.provider.MediaStore;
+import android.util.Log;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.Toast;
@@ -27,6 +29,8 @@ import com.tbruyelle.rxpermissions2.RxPermissions;
 import com.xxc.android10.R;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -34,6 +38,7 @@ import butterknife.OnClick;
 
 public class SecondActivity extends AppCompatActivity {
 
+    private static final String TAG = SecondActivity.class.getSimpleName();
     private static final int SELECT_IMAGE = 0;
     final RxPermissions mPermissions = new RxPermissions(this);
     @BindView(R.id.iv_select_image)
@@ -46,6 +51,38 @@ public class SecondActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_second);
         ButterKnife.bind(this);
+
+        getAudioData();
+    }
+
+    /**
+     * 扫描手机的音频文件
+     */
+    private void getAudioData() {
+        new Thread() {
+            @Override
+            public void run() {
+                super.run();
+                ContentResolver contentResolver = getContentResolver();
+                Uri uri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
+                String[] mediaMess = {
+                        MediaStore.Audio.Media.DISPLAY_NAME, // 视频名称
+                        MediaStore.Audio.Media.DURATION, // 视频长度
+                        MediaStore.Audio.Media.SIZE, // 视频大小
+                        MediaStore.Audio.Media.DATA // 视频的播放地址
+                };
+                Cursor cursor = contentResolver.query(uri, mediaMess, null, null, null);
+                if (cursor != null) {
+                    while (cursor.moveToNext()) {
+                        Log.d(TAG, "getAudioData: " + cursor.getString(0));
+                        Log.d(TAG, "getAudioData: " + cursor.getString(1));
+                        Log.d(TAG, "getAudioData: " + cursor.getString(2));
+                        Log.d(TAG, "getAudioData: " + cursor.getString(3));
+                    }
+                    cursor.close();
+                }
+            }
+        }.start();
     }
 
     @OnClick(R.id.btn_select_image)
@@ -224,10 +261,19 @@ public class SecondActivity extends AppCompatActivity {
     //展示图片
     private void displayImage(String imagePath) {
         if (imagePath != null) {
-            Bitmap bitImage = BitmapFactory.decodeFile(imagePath);//格式化图片
-
-            ivSelectImage.setImageBitmap(bitImage);//为imageView设置图片
-
+//            Bitmap bitImage = BitmapFactory.decodeFile(imagePath);//格式化图片
+//            ivSelectImage.setImageBitmap(bitImage);//为imageView设置图片
+//            Glide.with(this).load(imagePath).into(ivSelectImage);
+            try {
+                ParcelFileDescriptor fd = getContentResolver().openFileDescriptor(Uri.parse(imagePath), "r");
+                Bitmap bitmap = BitmapFactory.decodeFileDescriptor(fd.getFileDescriptor());
+                fd.close();
+                ivSelectImage.setImageBitmap(bitmap);
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         } else {
             Toast.makeText(this, "获取图片失败", Toast.LENGTH_SHORT).show();
         }
