@@ -265,9 +265,14 @@ public class SecondActivity extends AppCompatActivity {
 //            ivSelectImage.setImageBitmap(bitImage);//为imageView设置图片
 //            Glide.with(this).load(imagePath).into(ivSelectImage);
             try {
-                ParcelFileDescriptor fd = getContentResolver().openFileDescriptor(Uri.parse(imagePath), "r");
-                Bitmap bitmap = BitmapFactory.decodeFileDescriptor(fd.getFileDescriptor());
-                fd.close();
+                Bitmap bitmap;
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    ParcelFileDescriptor fd = getContentResolver().openFileDescriptor(Uri.parse(imagePath), "r");
+                    bitmap = BitmapFactory.decodeFileDescriptor(fd.getFileDescriptor());
+                    fd.close();
+                } else {
+                    bitmap = BitmapFactory.decodeFile(imagePath);
+                }
                 ivSelectImage.setImageBitmap(bitmap);
             } catch (FileNotFoundException e) {
                 e.printStackTrace();
