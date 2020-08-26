@@ -15,6 +15,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.ParcelFileDescriptor;
+import android.provider.ContactsContract;
 import android.provider.DocumentsContract;
 import android.provider.MediaStore;
 import android.util.Log;
@@ -22,6 +23,7 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.Toast;
 
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 
@@ -35,6 +37,13 @@ import java.io.IOException;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
+import io.reactivex.Observable;
+import io.reactivex.ObservableEmitter;
+import io.reactivex.ObservableOnSubscribe;
+import io.reactivex.Observer;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.disposables.Disposable;
+import io.reactivex.schedulers.Schedulers;
 
 public class SecondActivity extends AppCompatActivity {
 
@@ -52,7 +61,114 @@ public class SecondActivity extends AppCompatActivity {
         setContentView(R.layout.activity_second);
         ButterKnife.bind(this);
 
-        getAudioData();
+//        getAudioData();
+        getVideoData();
+
+//        getContacts();
+    }
+
+    /**
+     * 查询联系人信息
+     */
+    @SuppressLint("CheckResult")
+    private void getContacts() {
+        new RxPermissions(this)
+                .request(Manifest.permission.READ_CONTACTS, Manifest.permission.WRITE_CONTACTS)
+                .subscribe(granted -> {
+                    if (granted) {
+                        new Thread(){
+                            @Override
+                            public void run() {
+                                super.run();
+                                ContentResolver resolver = getContentResolver();
+                                Cursor cursor = resolver.query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI, null,
+                                        null, null, null);
+                                if (cursor != null) {
+                                    while (cursor.moveToNext()) {
+                                        String name = cursor.getString(cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME));
+                                        String number = cursor.getString(cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER));
+                                        Log.d(TAG, "run: name = " + name);
+                                        Log.d(TAG, "run: number = " + number);
+                                    }
+                                }
+                            }
+                        }.start();
+                    } else {
+
+                    }
+                });
+    }
+
+    @SuppressLint("CheckResult")
+    public void getVideoData() {
+        Observable.create((ObservableOnSubscribe<Cursor>) emitter -> {
+            ContentResolver contentResolver = getContentResolver();
+            Uri uri = MediaStore.Video.Media.EXTERNAL_CONTENT_URI;
+            String[] mediaMessage = {
+                    MediaStore.Video.Media.DISPLAY_NAME,
+                    MediaStore.Video.Media.DURATION,
+                    MediaStore.Video.Media.SIZE,
+                    MediaStore.Video.Media.DATA,
+                    MediaStore.Video.Media.ARTIST
+            };
+            Cursor cursor = contentResolver.query(uri, mediaMessage, null, null, null);
+            emitter.onNext(cursor);
+        }).subscribeOn(Schedulers.io()).observeOn(AndroidSchedulers.mainThread()).subscribe(new Observer<Cursor>() {
+            @Override
+            public void onSubscribe(Disposable d) {
+
+            }
+
+            @Override
+            public void onNext(Cursor cursor) {
+                if (cursor != null) {
+                    while (cursor.moveToNext()) {
+                        Log.d(TAG, "getAudioData: " + cursor.getString(0));
+                        Log.d(TAG, "getAudioData: " + cursor.getString(1));
+                        Log.d(TAG, "getAudioData: " + cursor.getString(2));
+                        Log.d(TAG, "getAudioData: " + cursor.getString(3));
+                        Log.d(TAG, "getAudioData: " + cursor.getString(4));
+                    }
+                    cursor.close();
+                }
+            }
+
+            @Override
+            public void onError(Throwable e) {
+
+            }
+
+            @Override
+            public void onComplete() {
+
+            }
+        });
+//        new Thread(){
+//            @Override
+//            public void run() {
+//                super.run();
+//                ContentResolver contentResolver = getContentResolver();
+//                Uri uri = MediaStore.Video.Media.EXTERNAL_CONTENT_URI;
+//                String[] mediaMessage = {
+//                        MediaStore.Video.Media.DISPLAY_NAME,
+//                        MediaStore.Video.Media.DURATION,
+//                        MediaStore.Video.Media.SIZE,
+//                        MediaStore.Video.Media.DATA,
+//                        MediaStore.Video.Media.ARTIST
+//                };
+//                Cursor cursor = contentResolver.query(uri, mediaMessage, null, null, null);
+//                if (cursor != null) {
+//                    while (cursor.moveToNext()) {
+//                        Log.d(TAG, "getAudioData: " + cursor.getString(0));
+//                        Log.d(TAG, "getAudioData: " + cursor.getString(1));
+//                        Log.d(TAG, "getAudioData: " + cursor.getString(2));
+//                        Log.d(TAG, "getAudioData: " + cursor.getString(3));
+//                        Log.d(TAG, "getAudioData: " + cursor.getString(4));
+//                    }
+//                    cursor.close();
+//                }
+//            }
+//        }.start();
     }
 
     /**
@@ -149,7 +265,8 @@ public class SecondActivity extends AppCompatActivity {
      * @param uri     图片uri
      * @return 图片地址
      */
-    private static String getRealPathFromUriAboveApiAndroidQ(Context context, Uri uri) {
+    @RequiresApi(api = Build.VERSION_CODES.KITKAT)
+    private String getRealPathFromUriAboveApiAndroidQ(Context context, Uri uri) {
         Cursor cursor = null;
         String path = getRealPathFromUriAboveApiAndroidK(context, uri);
         try {
@@ -184,8 +301,8 @@ public class SecondActivity extends AppCompatActivity {
      * @param uri     图片的Uri
      * @return 如果Uri对应的图片存在, 那么返回该图片的绝对路径, 否则返回null
      */
-    @SuppressLint("NewApi")
-    private static String getRealPathFromUriAboveApiAndroidK(Context context, Uri uri) {
+    @RequiresApi(api = Build.VERSION_CODES.KITKAT)
+    private String getRealPathFromUriAboveApiAndroidK(Context context, Uri uri) {
         String filePath = null;
         if (DocumentsContract.isDocumentUri(context, uri)) {
             // 如果是document类型的 uri, 则通过document id来进行处理
@@ -217,14 +334,14 @@ public class SecondActivity extends AppCompatActivity {
      * @param uri     图片的Uri
      * @return 如果Uri对应的图片存在, 那么返回该图片的绝对路径, 否则返回null
      */
-    private static String getRealPathFromUriBelowApiAndroidK(Context context, Uri uri) {
+    private String getRealPathFromUriBelowApiAndroidK(Context context, Uri uri) {
         return getDataColumn(context, uri, null, null);
     }
 
     /**
      * 获取数据库表中的 _data 列，即返回Uri对应的文件路径
      */
-    private static String getDataColumn(Context context, Uri uri, String selection, String[] selectionArgs) {
+    private String getDataColumn(Context context, Uri uri, String selection, String[] selectionArgs) {
         String path = null;
         String[] projection = new String[]{MediaStore.Images.Media.DATA};
         Cursor cursor = null;
