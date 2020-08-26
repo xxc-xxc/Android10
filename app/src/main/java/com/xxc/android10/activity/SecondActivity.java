@@ -29,6 +29,7 @@ import androidx.core.content.ContextCompat;
 
 import com.tbruyelle.rxpermissions2.RxPermissions;
 import com.xxc.android10.R;
+import com.xxc.android10.utils.DeviceUtil;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -38,7 +39,6 @@ import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
 import io.reactivex.Observable;
-import io.reactivex.ObservableEmitter;
 import io.reactivex.ObservableOnSubscribe;
 import io.reactivex.Observer;
 import io.reactivex.android.schedulers.AndroidSchedulers;
@@ -60,9 +60,10 @@ public class SecondActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_second);
         ButterKnife.bind(this);
-
 //        getAudioData();
         getVideoData();
+
+        String imei = DeviceUtil.getIMEI(this, SecondActivity.this);
 
 //        getContacts();
     }
