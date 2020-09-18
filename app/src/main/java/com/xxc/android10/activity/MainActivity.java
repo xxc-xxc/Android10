@@ -40,6 +40,8 @@ public class MainActivity extends AppCompatActivity {
     ImageView ivImage;
     @BindView(R.id.btn_go_activity)
     Button btnGoActivity;
+    @BindView(R.id.to_third_activity)
+    Button toThirdActivity;
 
     @SuppressLint("CheckResult")
     @Override
@@ -64,7 +66,7 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    @OnClick({R.id.btn_select_photo, R.id.btn_go_activity})
+    @OnClick({R.id.btn_select_photo, R.id.btn_go_activity, R.id.to_third_activity})
     public void onViewClicked(View view) {
         switch (view.getId()) {
             case R.id.btn_select_photo:
@@ -72,6 +74,9 @@ public class MainActivity extends AppCompatActivity {
                 break;
             case R.id.btn_go_activity:
                 startActivity(new Intent(this, SecondActivity.class));
+                break;
+            case R.id.to_third_activity:
+                startActivity(new Intent(this, ThirdActivity.class));
                 break;
         }
     }
